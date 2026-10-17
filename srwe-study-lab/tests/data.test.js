@@ -161,6 +161,11 @@ function answersFor(lab, pasted) {
 }
 
 test('every lab has fixtures', () => { for (const lab of SRWE.labs) assert(FIX[lab.id], 'no fixture for ' + lab.id); });
+test('every lab has a ready-made Packet Tracer network and activity (python3 tools/pkt/build.py)', () => {
+  const files = fs.readdirSync(path.join(ROOT, 'pt'));
+  for (const lab of SRWE.labs) for (const ext of ['.pkt', '.pka']) assert(files.includes(lab.id + ext), 'no pt/' + lab.id + ext);
+  for (const f of files) assert(SRWE.labs.some((l) => l.id + '.pkt' === f || l.id + '.pka' === f), 'pt/' + f + ' belongs to no lab');
+});
 
 for (const lab of SRWE.labs) {
   if (!FIX[lab.id]) continue;

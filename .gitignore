@@ -1,3 +1,5 @@
 # UI test screenshots and temporary browser profiles
 srwe-study-lab/tests/.qa/
 node_modules/
+__pycache__/
+srwe-study-lab/tools/pkt/.work/

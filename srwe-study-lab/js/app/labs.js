@@ -290,16 +290,23 @@
       h('tr', null, h('th', null, 'Device'), h('th', null, 'Interface'), h('th', null, 'Address'), h('th', null, 'Default gateway')),
       ...lab.addressing.map((r) => h('tr', null, h('td', null, r[0]), h('td', { class: 'mono' }, r[1]), h('td', { class: 'mono' }, r[2]), h('td', { class: 'mono' }, r[3] || ''))))) : null;
     const startBlocks = Object.keys(lab.start || {}).map((d) => codeBlock(configScript(lab.start[d]), d + ': paste into the CLI (from the Router>/Switch> prompt)'));
+    const pka = 'pt/' + id + '.pka', pkt = 'pt/' + id + '.pkt';
     const build = h('section', { class: 'card stack', 'aria-labelledby': 'b-' + id },
       h('h2', { id: 'b-' + id, class: 'h-step' }, h('span', { class: 'n' }, '1'), 'Build it in Packet Tracer'),
       lab.scenario ? h('div', { html: lab.scenario }) : null,
+      h('div', { class: 'note stack', style: { gap: '8px' } },
+        h('div', null, h('strong', null, 'Ready-made files. '), 'Open ', h('code', null, 'srwe-study-lab/' + pka), ' in Packet Tracer 9 (File > Open): every device, cable and starting configuration below is already in it, the PCs are addressed, the tasks are in its instructions window, and ',
+          h('b', null, 'Check Results'), ' scores your configuration. The ', h('code', null, '.pkt'), ' is the same network without the activity. Or build it yourself from the tables.'),
+        h('div', { class: 'btn-row' },
+          h('a', { class: 'btn small primary', href: pka, download: id + '.pka' }, App.icon('download', 14), 'Activity ' + id + '.pka'),
+          h('a', { class: 'btn small', href: pkt, download: id + '.pkt' }, App.icon('download', 14), 'Network only (.pkt)'))),
       App.ptTopology(lab),
       h('div', null, h('h3', null, 'Devices'), h('div', { class: 'scroll' }, h('table', { class: 't small compact' }, h('tr', null, h('th', null, 'Name'), h('th', null, 'Packet Tracer model'), h('th', null, 'Notes')), ...deviceRows))),
       h('div', null, h('h3', null, 'Cabling'), h('div', { class: 'scroll' }, h('table', { class: 't small compact' }, h('tr', null, h('th', null, 'From'), h('th', null, 'To'), h('th', null, 'Cable')), ...linkRows))),
       addrTable ? h('div', null, h('h3', null, 'Addressing'), addrTable) : null,
       lab.ptNotes && lab.ptNotes.length ? h('div', { class: 'note' }, h('strong', null, 'Packet Tracer notes'), h('ul', { style: { margin: '6px 0 0', paddingLeft: '1.2em' } }, ...lab.ptNotes.map((n) => h('li', { html: n })))) : null,
       startBlocks.length ? h('div', { class: 'stack' }, h('h3', null, 'Starting configuration'),
-        h('p', { class: 'small muted', style: { margin: 0 } }, 'Give each device its name in Packet Tracer, then paste these lines into its CLI. They set up everything this lab is not about.'), ...startBlocks) : null);
+        h('p', { class: 'small muted', style: { margin: 0 } }, 'The ready-made file already has these. If you build the lab yourself, give each device its name in Packet Tracer, then paste these lines into its CLI. They set up everything this lab is not about.'), ...startBlocks) : null);
 
     /* ---------- solution ---------- */
     const solBox = h('section', { class: 'card stack', hidden: true }, h('h3', null, 'Reference solution'),
