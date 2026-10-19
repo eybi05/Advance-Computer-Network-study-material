@@ -6,7 +6,7 @@
 
   /* ---------------- storage (never throws) ---------------- */
   const KEY = 'srwe-study-lab.v1';
-  const blank = () => ({ v: 1, read: {}, understood: {}, explain: {}, quiz: { attempts: [], q: {} }, cards: {}, drills: {}, labs: {}, settings: { theme: 'system' }, days: [] });
+  const blank = () => ({ v: 1, read: {}, understood: {}, explain: {}, quiz: { attempts: [], q: {} }, cards: {}, drills: {}, labs: {}, tlabs: {}, settings: { theme: 'system' }, days: [] });
   let state = blank();
   let storageOk = true;
   try {
@@ -92,6 +92,7 @@
     list: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
     clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
     keyboard: 'M2 6h20v12H2zM6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10',
+    school: 'M22 9 12 4 2 9l10 5 10-5zM6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6',
     flask: 'M9 2h6M10 2v6L4.5 18.5A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.8-2.5L14 8V2M7 15h10',
     box: 'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
     ref: 'M4 19.5V4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5zM8 7h8M8 11h6',
@@ -140,23 +141,33 @@
     const list = SRWE.labs.filter((l) => (l.topics || []).includes(t.id));
     return list.length ? list : SRWE.labs.filter((l) => l.module === t.module.num);
   };
+  /* Instructor's activities (js/data/teacher-labs.js): activity 3.4.5 covers topic 3.4; a module's closing
+     activities (1.6.1, 9.3.3, ...) have no topic of their own and cover the whole module. */
+  App.teacherTopics = (tl) => {
+    const m = App.modules().find((x) => x.num === tl.module);
+    if (!m) return [];
+    const t = tl.id.split('.').slice(0, 2).join('.');
+    return m.topics.some((x) => x.id === t) ? [t] : m.topics.map((x) => x.id);
+  };
+  App.teacherLabsFor = (t) => (SRWE.teacherLabs || []).filter((tl) => App.teacherTopics(tl).includes(t.id));
   App.drillsFor = (t) => SRWE.drills.filter((d) => d.t === t.id);
   App.questionsFor = (tid) => SRWE.quiz.filter((q) => q.t === tid);
   App.cardsFor = (tid) => SRWE.cards.filter((c) => c.t === tid);
 
   /* ---------------- progress model ----------------
    * Each topic has four stages, shown as four LEDs:
-   * read (marked read), understand (CYU passed), practice (topic quiz >= 80%), apply (a related Packet Tracer lab or drill done). */
+   * read (marked read), understand (CYU passed), practice (topic quiz >= 80%), apply (a related Packet Tracer lab, instructor's activity or drill done). */
   App.bestQuiz = function (scope) {
     let best = null;
     for (const a of state.quiz.attempts) if (a.scope === scope) { const p = a.score / a.total; if (best === null || p > best) best = p; }
     return best;
   };
   App.labDone = (id) => !!(state.labs[id] && state.labs[id].completed);
+  App.teacherDone = (id) => !!(state.tlabs[id] && state.tlabs[id].completed);
   App.drillDone = (id) => !!(state.drills[id] && state.drills[id].done);
   App.stages = function (t) {
     const quiz = App.bestQuiz('topic:' + t.id);
-    const applyItems = App.labsFor(t).map((l) => App.labDone(l.id)).concat(App.drillsFor(t).map((d) => App.drillDone(d.id)));
+    const applyItems = App.labsFor(t).map((l) => App.labDone(l.id)).concat(App.drillsFor(t).map((d) => App.drillDone(d.id)), App.teacherLabsFor(t).map((tl) => App.teacherDone(tl.id)));
     const labState = App.labsFor(t).some((l) => state.labs[l.id] && !state.labs[l.id].completed && (state.labs[l.id].doneCount || 0) > 0);
     return {
       read: state.read[t.id] ? 'on' : '',

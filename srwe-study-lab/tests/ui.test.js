@@ -148,6 +148,28 @@ const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed'); };
     await sleep(1500);
     const n = labDef('m1-basic-switch').tasks.length;
     assert(await evaluate("document.querySelectorAll('.task.done').length") === n, 'after reload');
+    assert(await evaluate("[...document.querySelectorAll('button')].every(b => !/Mark lab as done|Marked as done/.test(b.textContent) || b.hidden)"), 'done button shown on a lab whose tasks all pass');
+  });
+
+  await check('lab: Mark lab as done completes a lab without pasted output, and undoes', async () => {
+    await go('lab-m2-mac-table');
+    const done = () => evaluate("!!(JSON.parse(localStorage.getItem('srwe-study-lab.v1')).labs['m2-mac-table'] || {}).completed");
+    const btns = "[...document.querySelectorAll('button')].filter(b => /Mark lab as done|Marked as done/.test(b.textContent))";
+    assert(await evaluate(btns + ".length") === 2, 'expected a done button in the header and under the tasks');
+    assert(!(await done()), 'lab already complete');
+    await evaluate(btns + "[1].click(); true");
+    await sleep(200);
+    assert(await done(), 'completion not stored');
+    assert(await evaluate("!document.querySelector('.done-banner').hidden && /marked this lab as done/.test(document.querySelector('.done-banner').innerText)"), 'done banner not shown');
+    assert(await evaluate(btns + ".every(b => /Marked as done/.test(b.textContent))"), 'buttons not repainted');
+    await shot('ui-lab-marked-done');
+    await go('labs');
+    assert(await evaluate("/complete/.test(document.querySelector('a[href=\"#lab-m2-mac-table\"]').innerText)"), 'lab list does not show complete');
+    await go('lab-m2-mac-table');
+    await evaluate(btns + "[0].click(); true");
+    await sleep(200);
+    assert(!(await done()), 'undo not stored');
+    assert(await evaluate("document.querySelector('.done-banner').hidden"), 'done banner still shown after undo');
   });
 
   await check('lab: answer tasks and wrong configuration give feedback', async () => {
@@ -316,6 +338,52 @@ const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed'); };
     assert(!e, e);
   });
 
+  await check('instructor labs: list, activity page, answers, mark as done and links from the study labs', async () => {
+    const store = () => evaluate("JSON.parse(localStorage.getItem('srwe-study-lab.v1')).tlabs || {}");
+    await go('tlabs');
+    const n = await evaluate('SRWE.teacherLabs.length');
+    assert(n > 0 && await evaluate("document.querySelectorAll('a.list-item[href^=\"#tlab-\"]').length") === n, 'activity list');
+    assert(await evaluate("/Instructor's labs\\s*0\\/" + n + "/.test(document.getElementById('rail').innerText)"), 'rail count');
+    await go('tlab-3.4.5');
+    assert(await evaluate("document.querySelectorAll('.topo svg text').length >= 9"), 'topology');
+    assert(await evaluate("decodeURIComponent(document.querySelector('a[download$=\".pka\"]').href).endsWith(\"teacher's lab/3.4.5 Packet Tracer - Configure Trunks.pka\")"), 'download link');
+    assert(await evaluate("document.querySelectorAll('.tl-doc pre.cli .p').length > 0"), 'command examples not highlighted');
+    assert(await evaluate("document.querySelectorAll('.tl-doc .tl-q textarea').length") === 3, 'answer boxes');
+    await evaluate("(function(){ const ta = document.querySelector('.tl-q textarea'); ta.value = 'Native VLAN mismatch does not stop forwarding'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()");
+    await sleep(400);
+    assert(/Native VLAN/.test(((await store())['3.4.5'] || {}).answers[0] || ''), 'answer not saved');
+    assert(await evaluate("/1 of 3 questions answered/.test(document.querySelector('.ptlab-side').innerText)"), 'answer count');
+    await shot('ui-teacher-lab');
+    await evaluate("[...document.querySelectorAll('button')].find(b => /^Mark as done$/.test(b.textContent)).click(); true");
+    await sleep(200);
+    assert(((await store())['3.4.5'] || {}).completed > 0, 'done not stored');
+    assert(await evaluate("SRWE.App.stages(SRWE.App.topic('3.4')).apply") === 'on', 'Apply LED of topic 3.4 not lit');
+    await go('tlab-3.4.5');
+    assert(await evaluate("document.querySelector('.tl-q textarea').value.startsWith('Native VLAN') && [...document.querySelectorAll('button')].filter(b => /Marked as done/.test(b.textContent)).length === 2"), 'state after reload');
+    await go('t-3.4-apply');
+    assert(await evaluate("!!document.querySelector('a[href=\"#tlab-3.4.5\"]')"), 'not listed on the topic Apply tab');
+    await go('m3');
+    assert(await evaluate("document.querySelectorAll('a[href^=\"#tlab-3.\"]').length >= 5"), 'not listed on the module page');
+    await go('lab-m3-trunks');
+    assert(await evaluate("!!document.querySelector('a[href=\"#tlab-3.4.5\"]')"), 'study lab does not link its instructor activity');
+    await go('tlab-3.4.5');
+    await evaluate("[...document.querySelectorAll('button')].find(b => /Marked as done/.test(b.textContent)).click(); true");
+    await sleep(200);
+    assert(!((await store())['3.4.5'] || {}).completed, 'undo not stored');
+  });
+
+  await check('every instructor activity page renders', async () => {
+    const ids = await evaluate('SRWE.teacherLabs.map(l => l.id)');
+    for (const id of ids) {
+      await evaluate('location.hash = ' + JSON.stringify('tlab-' + id) + '; true');
+      await sleep(60);
+      const [topo, qs, want] = await evaluate("[!!document.querySelector('.topo svg'), document.querySelectorAll('.tl-q textarea').length, SRWE.teacherLabs.find(l => l.id === " + JSON.stringify(id) + ").questions]");
+      assert(topo && qs === want && await evaluate("document.querySelector('.tl-doc').innerText.length > 800"), 'activity ' + id + ' did not render');
+    }
+    const e = await errors();
+    assert(!e, e);
+  });
+
   await check('topic stages: mark as read lights the Read LED', async () => {
     await go('t-1.2-read');
     await evaluate("[...document.querySelectorAll('.article-foot .btn')].find(b => /Mark as read/.test(b.textContent)).click(); true");
@@ -341,6 +409,9 @@ const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed'); };
     await sleep(300);
     assert(await evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), 'lab page scrolls sideways on mobile');
     await shot('ui-mobile-lab');
+    await go('tlab-9.3.3');
+    await sleep(300);
+    assert(await evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), 'instructor activity page scrolls sideways on mobile');
     await cmd('Emulation.clearDeviceMetricsOverride');
   });
 

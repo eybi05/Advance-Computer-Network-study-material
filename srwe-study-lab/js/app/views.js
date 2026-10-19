@@ -36,7 +36,8 @@
       link('cards', 'cards', 'Flashcards', { count: due > 0 ? due : App.newCount(), hot: due > 0 }),
       link('quiz', 'list', 'Quizzes'), link('exam', 'clock', 'Practice exams'), link('drills', 'keyboard', 'Command drills')));
     rail.appendChild(h('nav', { class: 'nav-group', 'aria-label': 'Apply' }, h('div', { class: 'nav-label' }, 'Apply'),
-      link('labs', 'flask', 'Packet Tracer labs', { count: SRWE.labs.filter((l) => App.labDone(l.id)).length + '/' + SRWE.labs.length })));
+      link('labs', 'flask', 'Packet Tracer labs', { count: SRWE.labs.filter((l) => App.labDone(l.id)).length + '/' + SRWE.labs.length }),
+      (SRWE.teacherLabs || []).length ? link('tlabs', 'school', 'Instructor\'s labs', { count: SRWE.teacherLabs.filter((tl) => App.teacherDone(tl.id)).length + '/' + SRWE.teacherLabs.length }) : null));
     rail.appendChild(h('nav', { class: 'nav-group', 'aria-label': 'Reference' }, h('div', { class: 'nav-label' }, 'Reference'),
       link('reference', 'ref', 'Command reference'), link('glossary', 'search', 'Glossary'), link('settings', 'gear', 'Settings & progress')));
     const theme = App.state().settings.theme;
@@ -80,6 +81,7 @@
     const due = App.dueCards().length;
     const weak = App.weakTopics();
     const mistakes = App.mistakes();
+    const teacher = SRWE.teacherLabs || [];
     App.pageHead(page, {
       eyebrow: 'CCNA · Switching, Routing and Wireless Essentials v7',
       title: 'Your study plan',
@@ -105,7 +107,10 @@
         h('a', { class: 'stat', href: '#cards', style: { textDecoration: 'none', color: 'inherit' } }, h('div', { class: 'n' }, String(due)), h('div', { class: 'l' }, 'flashcards to study')),
         h('div', { class: 'stat' }, h('div', { class: 'n' }, String(App.streak())), h('div', { class: 'l' }, 'day streak'))),
       h('div', { class: 'card' }, h('div', { class: 'row' }, h('strong', null, 'Packet Tracer labs completed'), h('span', { class: 'spacer' }), h('span', { class: 'kv muted' }, SRWE.labs.filter((l) => App.labDone(l.id)).length + ' of ' + SRWE.labs.length)),
-        h('div', { style: { marginTop: '10px' } }, bar(SRWE.labs.filter((l) => App.labDone(l.id)).length / SRWE.labs.length))));
+        h('div', { style: { marginTop: '10px' } }, bar(SRWE.labs.filter((l) => App.labDone(l.id)).length / SRWE.labs.length)),
+        teacher.length ? h('div', { class: 'row', style: { marginTop: '14px' } }, h('a', { href: '#tlabs' }, h('strong', null, 'Instructor\'s activities done')), h('span', { class: 'spacer' }),
+          h('span', { class: 'kv muted' }, teacher.filter((tl) => App.teacherDone(tl.id)).length + ' of ' + teacher.length)) : null,
+        teacher.length ? h('div', { style: { marginTop: '10px' } }, bar(teacher.filter((tl) => App.teacherDone(tl.id)).length / teacher.length)) : null));
     page.appendChild(h('div', { class: 'hero' }, nextCard, stats));
 
     page.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Modules'), h('span', { class: 'spacer' }),
@@ -149,6 +154,11 @@
       if (labs.length) {
         page.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Packet Tracer labs for this module')));
         page.appendChild(h('div', { class: 'list' }, ...labs.map(App.labListItem)));
+      }
+      const tlabs = (SRWE.teacherLabs || []).filter((tl) => tl.module === n);
+      if (tlabs.length) {
+        page.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Your instructor\'s activities')));
+        page.appendChild(h('div', { class: 'list' }, ...tlabs.map(App.teacherListItem)));
       }
     });
   }
@@ -287,6 +297,11 @@
       body.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Packet Tracer labs')));
       body.appendChild(h('div', { class: 'list' }, ...labs.map(App.labListItem)));
     } else body.appendChild(h('div', { class: 'empty' }, 'No Packet Tracer lab for this topic yet.'));
+    const tlabs = App.teacherLabsFor(t);
+    if (tlabs.length) {
+      body.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'From your instructor')));
+      body.appendChild(h('div', { class: 'list' }, ...tlabs.map(App.teacherListItem)));
+    }
     if (drills.length) {
       body.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Warm up: command drills')));
       body.appendChild(h('div', { class: 'list' }, ...drills.map(App.drillListItem)));

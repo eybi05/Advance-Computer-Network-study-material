@@ -436,6 +436,32 @@ details.howto summary { cursor: pointer; }
 .list-item .grow { flex: 1; min-width: 0; }
 .list-item .ttl { font-weight: 600; }
 
+/* instructor's activities: Cisco instructions (levels follow the lab template's 0.25in / 0.5in indents) */
+.tl-doc { max-width: none; }
+.tl-doc h3 { font-size: 1.12rem; margin: 1.6em 0 0.6em; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.tl-doc h4 { font-size: 1.02rem; margin: 1.5em 0 0.4em; }
+.tl-doc h5 { font-size: 0.95rem; margin: 1.15em 0 0.35em; font-family: var(--font-ui); font-weight: 600; }
+.tl-doc p { margin: 0.35em 0 0.6em; }
+.tl-doc .l1 { margin-left: 1.1rem; }
+.tl-doc .l2 { margin-left: 2.2rem; }
+.tl-doc ul.l1, .tl-doc ul.l2 { padding-left: 1.2em; }
+.tl-doc p.sub { position: relative; padding-left: 1.7em; }
+.tl-doc p.sub .mk { position: absolute; left: 0; font-weight: 600; color: var(--text-2); }
+.tl-doc pre.cli, .tl-doc pre.out { margin: 0.4em 0 0.8em; }
+.tl-doc pre.out { color: #aab7c6; }
+.tl-doc .tl-note { color: var(--text-2); font-size: 0.92em; }
+.tl-doc code { font-family: var(--font-mono); font-size: 0.9em; }
+.tl-doc .scroll { margin: 0.4em 0 1em; }
+.tl-q { border: 1px solid var(--line); border-left: 3px solid var(--info); border-radius: var(--radius-sm); background: var(--bg-2); padding: 10px 12px; margin: 0.6em 0 0.9em; }
+.tl-q.answered { border-left-color: var(--ok); }
+.tl-q::before { content: "Question"; display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--info); margin-bottom: 4px; }
+.tl-q.answered::before { color: var(--ok); }
+.tl-q p.qt { margin: 0 0 8px; }
+.tl-q .tl-ans { width: 100%; min-height: 58px; resize: vertical; }
+details.tl-more summary { cursor: pointer; }
+details.tl-more[open] { display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 680px) { .tl-doc .l1 { margin-left: 0.5rem; } .tl-doc .l2 { margin-left: 1rem; } }
+
 /* toast */
 .toast { position: fixed; z-index: 60; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line-2); box-shadow: var(--shadow); border-radius: var(--radius); padding: 10px 14px; max-width: 360px; }
 

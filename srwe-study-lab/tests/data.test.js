@@ -188,5 +188,41 @@ for (const lab of SRWE.labs) {
   });
 }
 
-console.log('\nData tests: ' + pass + ' passed, ' + fail + ' failed  (' + Object.keys(topics).length + ' topics, ' + SRWE.quiz.length + ' questions, ' + SRWE.cards.length + ' cards, ' + SRWE.drills.length + ' drills, ' + SRWE.labs.length + ' labs)');
+/* ---------- instructor's activities (js/data/teacher-labs.js, imported by tools/pkt/teacher.py) ---------- */
+const TL = SRWE.teacherLabs || [];
+const APP = load(DATA.concat(['js/app/core.js', 'js/app/teacher.js'])).App;
+test('instructor activities: every .pka in the folder is imported and every entry points at a file there', () => {
+  const dir = path.join(ROOT, SRWE.teacherDir);
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.pka'));
+  assert(TL.length === files.length, files.length + ' .pka files but ' + TL.length + ' imported: run python3 tools/pkt/teacher.py');
+  for (const tl of TL) assert(files.includes(tl.file), tl.id + ': no file ' + tl.file);
+  assert(new Set(TL.map((tl) => tl.id)).size === TL.length, 'two files with the same activity number');
+});
+const TAGS = ['h3', 'h4', 'h5', 'p', 'span', 'b', 'i', 'code', 'br', 'pre', 'ul', 'li', 'div', 'table', 'tr', 'th', 'td'];
+for (const tl of TL) {
+  test('instructor activity ' + tl.id + ': instructions, questions, topology and topics', () => {
+    assert(tl.module === Number(tl.id.split('.')[0]) && modules.includes(tl.module), 'module ' + tl.module);
+    assert(tl.title && tl.html.length > 1000, 'title or instructions missing');
+    for (const m of tl.html.matchAll(/<\/?([a-z0-9]+)([^>]*)>/g)) {
+      assert(TAGS.includes(m[1]), 'unexpected tag <' + m[1] + '>');
+      assert(!/\son\w+\s*=|javascript:|style=/i.test(m[2]), 'unexpected attribute in ' + m[0]);
+    }
+    for (const t of ['ul', 'li', 'pre', 'div', 'table', 'tr', 'p']) {
+      const open = (tl.html.match(new RegExp('<' + t + '[ >]', 'g')) || []).length, close = (tl.html.match(new RegExp('</' + t + '>', 'g')) || []).length;
+      assert(open === close, '<' + t + '> opened ' + open + ' times, closed ' + close);
+    }
+    assert((tl.html.match(/class="tl-q /g) || []).length === tl.questions, 'question count');
+    assert(!/Type your answers here|Open configuration window|End of document/i.test(tl.html), 'Packet Tracer window markers left in the instructions');
+    assert(tl.devices.length, 'no devices');
+    const names = new Set(tl.devices.map((d) => d.id));
+    assert(names.size === tl.devices.length, 'two devices with the same name');
+    for (const d of tl.devices) assert(Number.isFinite(d.x) && Number.isFinite(d.y) && d.model, d.id + ': position or model');
+    for (const l of tl.links) assert(names.has(l[0]) && names.has(l[2]) && l[1] && l[3], 'cable to an unknown device or port: ' + l.join(' '));
+    const ts = APP.teacherTopics(tl);
+    assert(ts.length && ts.every((t) => topics[t]), 'no course topics: ' + ts.join(', '));
+    assert(APP.teacherRelated(tl).length, 'no study lab on the same topics');
+  });
+}
+
+console.log('\nData tests: ' + pass + ' passed, ' + fail + ' failed  (' + Object.keys(topics).length + ' topics, ' + SRWE.quiz.length + ' questions, ' + SRWE.cards.length + ' cards, ' + SRWE.drills.length + ' drills, ' + SRWE.labs.length + ' labs, ' + TL.length + ' instructor activities)');
 if (failures.length) { console.log('\n' + failures.join('\n\n')); process.exitCode = 1; }

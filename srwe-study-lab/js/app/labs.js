@@ -32,11 +32,20 @@
     wlc: '<rect class="body" x="-30" y="-15" width="60" height="30" rx="4" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1.6"/>' +
       '<text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text-2)">WLC</text>',
     cloud: '<path class="body" d="M-26 12a12 12 0 0 1 2-24 16 16 0 0 1 30-4 12 12 0 0 1 20 10 10 10 0 0 1-4 18z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1.6"/>',
+    modem: '<rect class="body" x="-22" y="-12" width="44" height="24" rx="5" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1.6"/>' +
+      '<path d="M-12 0h.01M-4 0h.01M4 0h.01" stroke="var(--text-2)" stroke-width="3.2" stroke-linecap="round"/>',
+    phone: '<rect class="body" x="-12" y="-21" width="24" height="42" rx="4" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1.6"/>' +
+      '<path d="M-6 -13h12M-6 -4h.01M0 -4h.01M6 -4h.01M-6 3h.01M0 3h.01M6 3h.01M-6 10h.01M0 10h.01M6 10h.01" stroke="var(--text-2)" stroke-width="2.4" stroke-linecap="round"/>',
+    tablet: '<rect class="body" x="-17" y="-22" width="34" height="44" rx="4" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1.6"/>' +
+      '<path d="M-3 16h6" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round"/>',
   };
-  const KIND_LABEL = { router: 'Router', switch: 'Switch', l3switch: 'Layer 3 switch', pc: 'PC', laptop: 'Laptop', server: 'Server', wrouter: 'Wireless router', ap: 'Access point', wlc: 'Wireless LAN controller', cloud: 'Cloud' };
+  const KIND_LABEL = { router: 'Router', switch: 'Switch', l3switch: 'Layer 3 switch', pc: 'PC', laptop: 'Laptop', server: 'Server', wrouter: 'Wireless router', ap: 'Access point', wlc: 'Wireless LAN controller', cloud: 'Cloud',
+    modem: 'Cable modem', phone: 'Phone', tablet: 'Tablet' };
   const CABLE = {
-    straight: 'Copper Straight-Through', cross: 'Copper Cross-Over', serial: 'Serial DCE (on the first device)', console: 'Console', wireless: 'Wireless (no cable)', fiber: 'Fiber',
+    straight: 'Copper Straight-Through', cross: 'Copper Cross-Over', serial: 'Serial DCE (on the first device)', console: 'Console', wireless: 'Wireless (no cable)', fiber: 'Fiber', coax: 'Coaxial',
   };
+  App.KIND_LABEL = KIND_LABEL;
+  App.CABLE_LABEL = CABLE;
   function svgEl(tag, attrs, inner) {
     const e = document.createElementNS(NS, tag);
     for (const k of Object.keys(attrs || {})) e.setAttribute(k, attrs[k]);
@@ -166,6 +175,10 @@
       lead: 'Build each network in your own Cisco Packet Tracer, configure it, then paste the output of show commands, ping and ipconfig here. Every task is checked from that output.',
       right: h('div', { class: 'stat', style: { minWidth: '160px' } }, h('div', { class: 'n' }, done + '/' + SRWE.labs.length), h('div', { class: 'l' }, 'labs complete')),
     });
+    if ((SRWE.teacherLabs || []).length) {
+      page.appendChild(h('div', { class: 'note row', style: { gap: '8px' } }, App.icon('school', 16),
+        h('span', null, 'The ' + SRWE.teacherLabs.length + ' Packet Tracer activities your instructor shared are under ', h('a', { href: '#tlabs' }, 'Instructor\'s labs'), '.')));
+    }
     page.appendChild(howToCopy(false));
     for (const m of App.modules()) {
       const labs = SRWE.labs.filter((l) => l.module === m.num);
@@ -194,10 +207,25 @@
     page.className = 'page wide';
     const ls = App.labState(id);
     const st = App.state();
+    /* Mark lab as done: for a lab finished in Packet Tracer (Check Results) without pasting output here.
+       Hidden while every task passes, since the lab is then complete anyway. */
+    const doneBtns = [];
+    const doneButton = (cls) => {
+      const b = h('button', { type: 'button', 'data-cls': cls });
+      b.addEventListener('click', () => {
+        if (ls.completed) delete ls.completed;
+        else { ls.completed = Date.now(); App.toast('Lab marked as done.'); }
+        evaluate();
+        App.save(true);
+        App.renderRail();
+      });
+      doneBtns.push(b);
+      return b;
+    };
     App.pageHead(page, {
       crumbs: [{ label: 'Dashboard', href: 'home' }, { label: 'Packet Tracer labs', href: 'labs' }, { label: lab.title }],
       eyebrow: 'Packet Tracer lab · module ' + lab.module + ' · ' + lab.level + ' · ~' + lab.minutes + ' min',
-      title: lab.title, lead: lab.goal,
+      title: lab.title, lead: lab.goal, right: doneButton('btn'),
     });
 
     /* ---------- tasks ---------- */
@@ -205,8 +233,9 @@
     const taskBox = h('div', { class: 'tasks' });
     const progress = h('div', { class: 'row' });
     const needBox = h('div', { class: 'need-box', hidden: true });
+    const doneMsg = h('div');
     const doneBox = h('div', { class: 'done-banner', hidden: true }, App.led('on big'),
-      h('div', null, h('strong', null, 'Lab complete. '), 'Every task passes on your Packet Tracer output.'), h('span', { class: 'spacer' }), h('a', { class: 'btn small', href: '#labs' }, 'All labs'));
+      doneMsg, h('span', { class: 'spacer' }), h('a', { class: 'btn small', href: '#labs' }, 'All labs'));
     let part = null;
     lab.tasks.forEach((t, i) => {
       if (t.part && t.part !== part) { part = t.part; taskBox.appendChild(h('div', { class: 'part-title' }, part)); }
@@ -275,7 +304,17 @@
       if (devs.length) {
         needBox.append(h('strong', null, 'Still needed from Packet Tracer'), h('ul', null, ...devs.map((d) => h('li', null, h('b', null, d + ': '), [...needs[d]].map((w, k) => [k ? ', ' : '', h('code', null, w)])))));
       }
+      const allPass = req.length > 0 && n === req.length;
       doneBox.hidden = !ls.completed;
+      doneMsg.innerHTML = '';
+      if (allPass) doneMsg.append(h('strong', null, 'Lab complete. '), 'Every task passes on your Packet Tracer output.');
+      else doneMsg.append(h('strong', null, 'Lab done. '), 'You marked this lab as done.');
+      for (const b of doneBtns) {
+        b.hidden = allPass;
+        b.className = b.dataset.cls + (ls.completed ? '' : ' primary');
+        b.innerHTML = '';
+        b.append(App.icon('check', 14), ls.completed ? 'Marked as done' : 'Mark lab as done');
+      }
       if (ls.justCompleted) { delete ls.justCompleted; App.toast('Lab complete. Well done!'); App.renderRail(); }
       for (const tab of tabs) tab.refresh();
       App.save();
@@ -291,6 +330,7 @@
       ...lab.addressing.map((r) => h('tr', null, h('td', null, r[0]), h('td', { class: 'mono' }, r[1]), h('td', { class: 'mono' }, r[2]), h('td', { class: 'mono' }, r[3] || ''))))) : null;
     const startBlocks = Object.keys(lab.start || {}).map((d) => codeBlock(configScript(lab.start[d]), d + ': paste into the CLI (from the Router>/Switch> prompt)'));
     const pka = 'pt/' + id + '.pka', pkt = 'pt/' + id + '.pkt';
+    const fromTeacher = (SRWE.teacherLabs || []).filter((tl) => App.teacherTopics(tl).some((t) => (lab.topics || []).includes(t)));
     const build = h('section', { class: 'card stack', 'aria-labelledby': 'b-' + id },
       h('h2', { id: 'b-' + id, class: 'h-step' }, h('span', { class: 'n' }, '1'), 'Build it in Packet Tracer'),
       lab.scenario ? h('div', { html: lab.scenario }) : null,
@@ -300,6 +340,8 @@
         h('div', { class: 'btn-row' },
           h('a', { class: 'btn small primary', href: pka, download: id + '.pka' }, App.icon('download', 14), 'Activity ' + id + '.pka'),
           h('a', { class: 'btn small', href: pkt, download: id + '.pkt' }, App.icon('download', 14), 'Network only (.pkt)'))),
+      fromTeacher.length ? h('div', { class: 'note row', style: { gap: '8px' } }, App.icon('school', 16), h('strong', null, 'Your instructor\'s activit' + (fromTeacher.length > 1 ? 'ies' : 'y') + ' on this:'),
+        ...fromTeacher.map((tl, k) => [k ? h('span', { class: 'muted' }, '·') : null, h('a', { href: '#tlab-' + tl.id }, tl.id + ' ' + tl.title)])) : null,
       App.ptTopology(lab),
       h('div', null, h('h3', null, 'Devices'), h('div', { class: 'scroll' }, h('table', { class: 't small compact' }, h('tr', null, h('th', null, 'Name'), h('th', null, 'Packet Tracer model'), h('th', null, 'Notes')), ...deviceRows))),
       h('div', null, h('h3', null, 'Cabling'), h('div', { class: 'scroll' }, h('table', { class: 't small compact' }, h('tr', null, h('th', null, 'From'), h('th', null, 'To'), h('th', null, 'Cable')), ...linkRows))),
@@ -320,7 +362,7 @@
     const tasksCard = h('section', { class: 'card stack', 'aria-labelledby': 't-' + id },
       h('h2', { id: 't-' + id, class: 'h-step' }, h('span', { class: 'n' }, '2'), 'Tasks'),
       progress, doneBox, taskBox,
-      h('div', { class: 'btn-row' },
+      h('div', { class: 'btn-row' }, doneButton('btn small'),
         h('button', { class: 'btn small', type: 'button', onclick: () => { solBox.hidden = !solBox.hidden; if (!solBox.hidden) solBox.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, App.icon('eye', 14), 'Solution'),
         h('button', { class: 'btn small ghost', type: 'button', onclick: () => { resetConfirm.hidden = false; } }, App.icon('reset', 14), 'Clear my output')), resetConfirm);
 

@@ -9,7 +9,7 @@ Every topic goes through four stages:
 | **Read** | A lesson for each of the 64 course topics, covering every slide, with CLI examples and **slide errata** where the official deck is wrong. |
 | **Understand** | The core idea, why it matters, an analogy, common traps, "explain it yourself" prompts with model answers, interactive visuals, and a 3-question check. |
 | **Practice** | 676 quiz questions (multiple choice, choose-N, ordering, matching, true/false and **typed IOS commands**), 337 spaced-repetition flashcards, 30 command drills, and timed practice exams for each course checkpoint (modules 1–4, 5–6, 7–9, 10–13, 14–16) plus a final. |
-| **Apply** | 28 labs that you build and configure in **your own Cisco Packet Tracer**. You paste the output of show commands, `ping` and `ipconfig` back into the lab page, and every task is checked from that output. |
+| **Apply** | 28 labs that you build and configure in **your own Cisco Packet Tracer**. You paste the output of show commands, `ping` and `ipconfig` back into the lab page, and every task is checked from that output. Plus the **28 Packet Tracer activities your instructor shared**, with their instructions, topology and a place for your answers. |
 
 Each topic shows four status lights (Read · Understand · Practice · Apply), like port LEDs on a switch.
 
@@ -28,7 +28,7 @@ Progress, pasted lab output and answers are saved automatically in your browser 
 Each lab page has three parts:
 
 1. **Build it in Packet Tracer**: a **ready-made activity (`.pka`) and network (`.pkt`)** (see below), a topology diagram, the Packet Tracer model of every device, the cabling (ports and cable type), the addressing table, Packet Tracer tips, and a **starting configuration** for each device with a Copy button. Paste it into the device's CLI to set up everything the lab is not about (or the faults, in troubleshooting labs).
-2. **Tasks**: grouped in parts, each with a status light, a hint and the commands if you get stuck. Some tasks ask a question you answer from your own output (for example "which switch is the root bridge?"); GUI-only steps (wireless router, WLC) are ticked by you.
+2. **Tasks**: grouped in parts, each with a status light, a hint and the commands if you get stuck. Some tasks ask a question you answer from your own output (for example "which switch is the root bridge?"); GUI-only steps (wireless router, WLC) are ticked by you. A lab is complete when every task passes; if you finished it in Packet Tracer (for example with Check Results in the `.pka`) and do not want to paste output, click **Mark lab as done** at the top of the page or under the tasks. Click it again to undo.
 3. **Check your work**: one tab per device with the commands to run (click a command to copy it). In Packet Tracer, run `terminal length 0`, run the commands, copy the CLI text (or a PC's Command Prompt text) and paste it into the tab. Tasks turn green as soon as the output shows they are done; a task that needs output you have not pasted says exactly what to paste and from which device. If you paste a device's output into the wrong tab, the page warns you.
 
 **Ready-made files.** Every lab comes as a Packet Tracer 9 activity, `pt/<lab id>.pka`, and as a plain network, `pt/<lab id>.pkt`. Both hold the lab already built: the devices named and placed like the diagram, every cable, the starting configuration in each switch and router, and the PCs, laptops and servers addressed from the addressing table. The activity also has the tasks in its instructions window, and **Check Results** scores every setting the reference solution configures (hostname, passwords, VLANs, port modes, addresses, routes, OSPF, DHCP and so on). Pings, questions and show-command checks are still scored here, from your pasted output. Open a file with File > Open, or use the download buttons on the lab page. Wireless settings (SSIDs, WLC, home router) are yours to configure, as the labs ask.
@@ -64,6 +64,25 @@ The checker reads `show running-config`, `show startup-config`, `show vlan brief
 | 15 | IPv4/IPv6 static and default routes · floating static and host routes |
 | 16 | Troubleshoot static and default routes |
 
+## Instructor's labs
+
+The Packet Tracer activities your instructor shared live in **`teacher's lab/`** next to this folder (`3.4.5 Packet Tracer - Configure Trunks.pka` and so on). **Apply → Instructor's labs** lists them by module, and each activity has a page with:
+
+* a download button for the `.pka` (or open it from the folder with File > Open); Packet Tracer scores it with **Check Results**,
+* the topology, drawn from the activity's own network (devices, models and cabling under **Devices and cabling**). For an activity that starts with an empty workspace (1.6.1, 6.4.1) it shows the devices you have to add,
+* the activity's instructions (addressing table, objectives, parts and steps, command examples), with an answer box under every question. Answers are saved in your browser and in backups,
+* **Mark as done**, and links to this app's labs and course topics on the same subject.
+
+An activity covers the topic its number names (3.4.5 → topic 3.4); a module's closing activities (1.6.1, 3.6.1, 9.3.3 …) cover the whole module. A finished activity lights the topic's Apply LED, the study lab pages link to their instructor's activity, and the topic Apply tabs and module pages list them.
+
+When your instructor shares more activities, put the `.pka` files in `teacher's lab/` (keep Cisco's file names, `<n.n.n> Packet Tracer - <title>.pka`) and run:
+
+```bash
+python3 tools/pkt/teacher.py      # rewrites js/data/teacher-labs.js
+```
+
+It reads each activity with `ptfile.py` and converts the instructions from the Word HTML Packet Tracer stores into the app's own markup; the files themselves are not changed.
+
 The labs target Cisco Packet Tracer 8/9 (2960-24TT switches, ISR4321/ISR4331 routers, a 3650-24PS Layer 3 switch, WRT300N, AccessPoint-PT, WLC-3504).
 
 ## Command drills and typed commands
@@ -90,8 +109,8 @@ Drills are short guided sequences like the course's Syntax Checker activities: y
 
 ```bash
 node tests/pt.test.js     # Packet Tracer output parsers and the grading engine, on sample IOS / PC output
-node tests/data.test.js   # every script parses; every lesson, question, card, drill and widget; every lab passes on its solved output and fails on its starting output
-node tests/ui.test.js     # end-to-end in headless Google Chrome: labs (paste, grade, reload), drills, all topic quizzes, exams, flashcards, widgets, every topic and lab page, mobile
+node tests/data.test.js   # every script parses; every lesson, question, card, drill and widget; every lab passes on its solved output and fails on its starting output; every instructor activity is imported, with clean instructions and a consistent topology
+node tests/ui.test.js     # end-to-end in headless Google Chrome: labs (paste, grade, reload), instructor activities, drills, all topic quizzes, exams, flashcards, widgets, every topic and lab page, mobile
 ```
 
 The lab tests build Packet Tracer-style output from each lab's own starting and solution configuration (`tests/render.js`, `tests/labs.fixtures.js`). Set `UI_SHOTS=1` to keep screenshots from the UI test in `tests/.qa/`.
@@ -108,8 +127,10 @@ js/data/quiz.js, cards.js           modules 1–4 questions and flashcards
 js/data/practice-kit.js, mN-practice.js   modules 5–16 questions and flashcards
 js/data/drills.js, drills2.js       command drills
 js/data/labkit.js, labs1–3.js       Packet Tracer labs and their check builders
+js/data/teacher-labs.js             instructor's activities (generated by tools/pkt/teacher.py)
 js/data/reference.js, reference2.js command reference and glossary
-js/app/                 core (storage, router, progress), views, widgets, widgets2, practice, labs, main
+js/app/                 core (storage, router, progress), views, widgets, widgets2, practice, labs, teacher, main
+tools/pkt/              Packet Tracer file tools: build.py, finalize.py, teacher.py (imports the instructor's activities)
 tests/                  Node and Chrome tests
 ```
 
