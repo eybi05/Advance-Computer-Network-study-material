@@ -292,6 +292,7 @@
     { key: 'm7-9', mods: [7, 8, 9], title: 'Modules 7–9: Available and Reliable Networks', n: 36, min: 50 },
     { key: 'm10-13', mods: [10, 11, 12, 13], title: 'Modules 10–13: L2 Security and WLANs', n: 40, min: 60 },
     { key: 'm14-16', mods: [14, 15, 16], title: 'Modules 14–16: Routing Concepts and Configuration', n: 30, min: 45 },
+    { key: 'midterm', mods: [1, 2, 3, 4, 5, 6, 10, 11, 14], range: 'modules 1–6, 10, 11 and 14', title: 'Midterm: modules 1–6, 10, 11 and 14', n: 45, min: 70 },
     { key: 'final', mods: [], title: 'Final exam: all 16 modules', n: 64, min: 90 },
   ];
   App.EXAMS = EXAMS;
@@ -313,7 +314,7 @@
     }
     const mods = ex.mods.length ? ex.mods : App.modules().map((m) => m.num);
     App.pageHead(page, { crumbs: [{ label: 'Dashboard', href: 'home' }, { label: 'Practice exams', href: 'exam' }, { label: ex.title }], title: 'Practice exam', eyebrow: ex.title,
-      lead: ex.n + ' questions balanced across modules ' + mods[0] + '–' + mods[mods.length - 1] + ', ' + ex.min + ' minutes, no feedback until you finish.' });
+      lead: ex.n + ' questions balanced across ' + (ex.range || 'modules ' + mods[0] + '–' + mods[mods.length - 1]) + ', ' + ex.min + ' minutes, no feedback until you finish.' });
     if (!go) {
       const hist = App.state().quiz.attempts.filter((a) => a.scope === examScope(ex.key) || (ex.key === 'm1-4' && a.scope === 'exam')).slice(-5).reverse();
       page.appendChild(h('div', { class: 'card stack', style: { maxWidth: '760px' } },
