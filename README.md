@@ -11,6 +11,10 @@ Study material for **CCNA Switching, Routing and Wireless Essentials (SRWE) v7**
 
 ## Use the study app
 
-Clone or download the repository and open `START-SRWE-STUDY-LAB.html` (or `srwe-study-lab/index.html`) in Chrome, Firefox or Edge. Nothing needs to be installed. Progress is saved in your browser.
+Open it online: **https://eybi05.github.io/Advance-Computer-Network-study-material/** (GitHub Pages).
+
+Studying for the midterm? Open the **Midterm guide** ([direct link](https://eybi05.github.io/Advance-Computer-Network-study-material/#midterm)): read modules 1–6, 10, 11 and 14. It maps every midterm topic to its lessons and has a midterm practice exam. Single-area OSPFv2 is not part of this course (it is ENSA modules 1–2).
+
+Or clone or download the repository and open `START-SRWE-STUDY-LAB.html` (or `srwe-study-lab/index.html`) in Chrome, Firefox or Edge. Nothing needs to be installed. Progress is saved in your browser.
 
 The labs are built in your own Cisco Packet Tracer (8 or 9). See [`srwe-study-lab/README.md`](srwe-study-lab/README.md) for details and for the test suite.

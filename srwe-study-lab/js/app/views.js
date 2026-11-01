@@ -19,7 +19,7 @@
     rail.appendChild(h('a', { class: 'brand', href: '#home' },
       h('span', { class: 'brand-mark', html: '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="2" y="6" width="18" height="10" rx="2" fill="none" stroke="#9eb0c4" stroke-width="1.6"/><circle cx="6.5" cy="11" r="1.7" fill="#3fb950"/><circle cx="11" cy="11" r="1.7" fill="#3fb950"/><circle cx="15.5" cy="11" r="1.7" fill="#f5a524"/></svg>' }),
       h('span', null, h('div', { class: 'brand-name' }, 'SRWE Study Lab'), h('div', { class: 'brand-sub' }, 'Modules 1–' + App.modules().length))));
-    const learn = h('nav', { class: 'nav-group', 'aria-label': 'Learn' }, h('div', { class: 'nav-label' }, 'Learn'), link('home', 'home', 'Dashboard'));
+    const learn = h('nav', { class: 'nav-group', 'aria-label': 'Learn' }, h('div', { class: 'nav-label' }, 'Learn'), link('home', 'home', 'Dashboard'), link('midterm', 'flag', 'Midterm guide'));
     const BLOCKS = { 1: 'Modules 1–4', 5: 'Modules 5–6', 7: 'Modules 7–9', 10: 'Modules 10–13', 14: 'Modules 14–16' };
     for (const m of App.modules()) {
       if (BLOCKS[m.num]) learn.appendChild(h('div', { class: 'nav-block' }, BLOCKS[m.num]));
@@ -112,6 +112,9 @@
           h('span', { class: 'kv muted' }, teacher.filter((tl) => App.teacherDone(tl.id)).length + ' of ' + teacher.length)) : null,
         teacher.length ? h('div', { style: { marginTop: '10px' } }, bar(teacher.filter((tl) => App.teacherDone(tl.id)).length / teacher.length)) : null));
     page.appendChild(h('div', { class: 'hero' }, nextCard, stats));
+    page.appendChild(h('a', { class: 'list-item', href: '#midterm', style: { marginTop: '18px' } }, App.icon('flag'),
+      h('div', { class: 'grow' }, h('div', { class: 'ttl' }, 'Studying for the midterm? Start here'), h('div', { class: 'small muted' }, 'Read modules 1–6, 10, 11 and 14, with each midterm topic mapped to its lessons.')),
+      h('span', { class: 'pill accent' }, 'Midterm guide')));
 
     page.appendChild(h('div', { class: 'section-title' }, h('h2', null, 'Modules'), h('span', { class: 'spacer' }),
       h('div', { class: 'legend' }, h('span', null, App.led('on'), 'done'), h('span', null, App.led('half'), 'in progress'), h('span', null, App.led(''), 'not started'),
@@ -131,6 +134,59 @@
           h('a', { class: 'btn primary', href: '#quiz-mistakes' }, 'Retry them')) : null));
     }
     if (!App.storageOk()) page.appendChild(h('p', { class: 'note', style: { marginTop: '18px' } }, 'Your browser is blocking local storage, so progress will not be saved after you close this page.'));
+  });
+
+  /* ---------------- midterm reading guide ---------------- */
+  /* The midterm syllabus, topic by topic, mapped onto the modules of this course. */
+  const MIDTERM = [
+    { title: 'Course Introduction – Basic Device Configuration', mods: [1] },
+    { title: 'Switching Concepts, VLANs', mods: [2, 3] },
+    { title: 'Routing Concepts, Inter-VLAN Routing', mods: [14, 4], note: 'Read Module 14 first: it explains the routing table that inter-VLAN routing relies on.' },
+    { title: 'Redundant Networks: STP & EtherChannel', mods: [5, 6] },
+    { title: 'Sniffing and Spoofing', mods: [], topics: ['10.3', '10.4', '10.5', '11.3', '11.4'],
+      note: 'There is no separate module for this. The attacks (MAC flooding, MAC/IP address spoofing, ARP spoofing, DHCP spoofing and starvation) are in Module 10; their mitigations are in Module 11.' },
+    { title: 'LAN Security Concepts, Switch Security Configuration', mods: [10, 11] },
+    { title: 'Single-Area OSPFv2', mods: [], ospf: true },
+  ];
+  App.MIDTERM_MODULES = [1, 2, 3, 4, 5, 6, 10, 11, 14];
+  App.route('midterm', function (page) {
+    const mod = (n) => App.modules().find((m) => m.num === n);
+    const skip = App.modules().filter((m) => App.MIDTERM_MODULES.indexOf(m.num) < 0);
+    const topicLink = (t) => h('a', { class: 'list-item', href: '#t-' + t.id + '-read' },
+      h('div', { class: 'grow' }, h('div', { class: 'ttl' }, t.id + ' ' + t.title), h('div', { class: 'small muted' }, 'slides ' + t.slides)), App.ledRow(t));
+    App.pageHead(page, {
+      crumbs: [{ label: 'Dashboard', href: 'home' }, { label: 'Midterm guide' }],
+      eyebrow: 'Midterm exam', title: 'What to read for the midterm',
+      lead: 'Read modules 1–6, 10, 11 and 14. Below, every midterm topic is matched to the modules and lessons that cover it, in exam order.',
+      right: h('div', { class: 'btn-row' }, h('a', { class: 'btn primary', href: '#exam-midterm' }, App.icon('clock', 16), 'Midterm practice exam')),
+    });
+    const done = App.MIDTERM_MODULES.reduce((s, n) => s + App.modulePct(mod(n)), 0) / App.MIDTERM_MODULES.length;
+    page.appendChild(h('div', { class: 'card' }, h('div', { class: 'row' }, h('strong', null, 'Midterm modules studied'), h('span', { class: 'spacer' }), h('span', { class: 'kv muted' }, pctText(done))),
+      h('div', { style: { marginTop: '10px' } }, bar(done)),
+      h('p', { class: 'small muted', style: { margin: '12px 0 0' } }, 'Not on the midterm: ' + skip.map((m) => m.num + ' ' + m.title).join(' · ') + '.')));
+    MIDTERM.forEach((sec, i) => {
+      page.appendChild(h('div', { class: 'section-title' }, h('h2', null, (i + 1) + '. ' + sec.title), h('span', { class: 'spacer' }),
+        sec.mods.length ? h('span', { class: 'pill' }, 'Module' + (sec.mods.length > 1 ? 's ' : ' ') + sec.mods.join(' + ')) : sec.topics ? h('span', { class: 'pill' }, 'Topics in modules 10 + 11') : h('span', { class: 'pill warn' }, 'not in this course')));
+      if (sec.note) page.appendChild(h('p', { class: 'note' }, sec.note));
+      if (sec.ospf) {
+        page.appendChild(h('div', { class: 'note' },
+          h('p', { style: { margin: '0 0 8px' } }, 'SRWE does not teach OSPF configuration. Single-area OSPFv2 is Modules 1–2 of the next course, ENSA (Enterprise Networking, Security, and Automation), so get those slides from your instructor.'),
+          h('p', { style: { margin: 0 } }, 'Here you can still learn what an OSPF route looks like in the routing table (code O, administrative distance 110) in topics 14.4 and 14.5, and configure basic OSPF in two labs.')));
+        page.appendChild(h('div', { class: 'list' }, topicLink(App.topic('14.4')), topicLink(App.topic('14.5')),
+          h('a', { class: 'list-item', href: '#lab-m4-l3switch' }, h('div', { class: 'grow' }, h('div', { class: 'ttl' }, 'Lab: Inter-VLAN Routing on a Layer 3 Switch'), h('div', { class: 'small muted' }, 'router ospf 10 · network … area 0 · verify O routes')), h('span', { class: 'pill' }, 'Packet Tracer')),
+          h('a', { class: 'list-item', href: '#tlab-4.3.8' }, h('div', { class: 'grow' }, h('div', { class: 'ttl' }, 'Instructor\'s activity 4.3.8: Configure Layer 3 Switching and Inter-VLAN Routing'), h('div', { class: 'small muted' }, 'includes enabling OSPF on the Layer 3 switch')), h('span', { class: 'pill' }, 'Packet Tracer'))));
+        return;
+      }
+      if (sec.topics) { page.appendChild(h('div', { class: 'list' }, ...sec.topics.map((id) => topicLink(App.topic(id))))); return; }
+      page.appendChild(h('div', { class: 'grid two' }, ...sec.mods.map((n) => {
+        const m = mod(n);
+        return h('div', { class: 'card stack' },
+          h('div', { class: 'row' }, h('a', { href: '#m' + n }, h('strong', null, 'Module ' + n + ': ' + m.title)), h('span', { class: 'spacer' }), h('span', { class: 'small muted kv' }, pctText(App.modulePct(m)))),
+          bar(App.modulePct(m)),
+          h('div', { class: 'list' }, ...m.topics.map(topicLink)),
+          h('div', { class: 'btn-row' }, h('a', { class: 'btn small', href: '#quiz-m' + n }, App.icon('list', 14), 'Module quiz'), h('a', { class: 'btn small', href: '#cards-m' + n }, App.icon('cards', 14), 'Flashcards')));
+      })));
+    });
   });
 
   /* ---------------- module page ---------------- */

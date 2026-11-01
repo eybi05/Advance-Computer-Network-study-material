@@ -259,9 +259,19 @@ const assert = (c, m) => { if (!c) throw new Error(m || 'assertion failed'); };
 
   await check('practice exams list and start', async () => {
     await go('exam');
-    assert(await evaluate("document.querySelectorAll('.list-item').length") === 6, 'exam list');
+    assert(await evaluate("document.querySelectorAll('.list-item').length") === 7, 'exam list');
     await go('exam-m1-4-go');
     assert(await evaluate("!!document.querySelector('.qcard') && /Question 1 of 40/.test(document.querySelector('.qhead').innerText)"), 'exam did not start');
+    await go('exam-midterm-go');
+    assert(await evaluate("!!document.querySelector('.qcard') && /Question 1 of 45/.test(document.querySelector('.qhead').innerText)"), 'midterm exam did not start');
+  });
+
+  await check('midterm guide maps every midterm topic to its lessons', async () => {
+    await go('midterm');
+    assert(await evaluate("document.querySelectorAll('.section-title h2').length") === 7, 'seven midterm topics');
+    assert(await evaluate("[1,2,3,4,5,6,10,11,14].every((n) => !!document.querySelector('#page a[href=\"#m' + n + '\"]'))"), 'module links');
+    assert(await evaluate("!!document.querySelector('#page a[href=\"#t-10.5-read\"]') && !!document.querySelector('#page a[href=\"#exam-midterm\"]')"), 'topic and exam links');
+    assert(await evaluate("!!document.querySelector('#rail a[href=\"#midterm\"]')"), 'rail link');
   });
 
   await check('flashcards: reveal and rate with the keyboard', async () => {
